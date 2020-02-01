@@ -10,3 +10,14 @@ services:
      environment:
        MYSQL_ROOT_PASSWORD: root
 
+
+  api:
+    container_name: cot-api
+    build:
+      context: src/api
+      dockerfile: Dockerfile
+    environment:
+      - ENVIRONMENT=debug
+    depends_on:
+      - db
+    restart: always
