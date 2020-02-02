@@ -23,11 +23,16 @@ def hello_world():
 
 if __name__ == '__main__':
 
+    # STARTUP
+
     if config.STARTUP["DOWNLOAD"]:
         utils.downloadAllData()
 
+    if config.STARTUP["EXTRACT"]:
+        utils.extractData()
+
     if config.STARTUP["PARSE"]:
-        utils.parseData()
+        data = utils.parseData()
 
 
     #app.run(debug=config.DEBUG, host = config.HOST)

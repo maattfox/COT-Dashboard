@@ -4,6 +4,7 @@ import shutil
 import requests
 import zipfile
 import io
+import pandas as pd
 
 import config
 
@@ -30,6 +31,7 @@ def removeContentsFromPath(rootPath):
 
 def downloadAllData():
     # TODO: Thread the downloading of items to speed up function
+    # TODO: Fix download of COT Legacy FO, zip is bad zip
 
     # REMOVE ALL DATA FROM DATA FOLDER!
 
@@ -51,19 +53,23 @@ def downloadAllData():
 
                 url = config.SOURCE_URL + item_url_full_part
 
-                r = requests.get(url)
-                with open(current_working_directory + item_url_full_part, 'wb+') as f:
+                r = requests.get(url, stream=True)
+                with open(current_working_directory + item_url_full_part, 'w+b') as f:
                     f.write(r.content)
                     f.close()
 
 
-def parseData():
+
+def extractData():
 
     for source in config.SOURCES:
 
         current_folder = config.DATA_FOLDER + source["directory"]
         createFolder(current_folder, "extracted")
         output_data_folder = current_folder + "/extracted/"
+
+        # clear each extracted folder
+        removeContentsFromPath(output_data_folder)
 
         # for each file in folder
         directory = os.fsencode(current_folder)
@@ -78,9 +84,32 @@ def parseData():
 
 
 
+def parseData():
+
+    data_frame_list = []
+
+    for source in config.SOURCES:
+        current_folder = config.DATA_FOLDER + source["directory"]
+        output_data_folder = current_folder + "/extracted/"
+
+        list = []
+
+        for subdir, dirs, files in os.walk(output_data_folder):
+            if len(files) == 1:
+                print("Parsing {} file {}".format(subdir, list[0]))
+
+                df = pd.read_csv(subdir + "/"+files[0], index_col=None, header=0)
+                list.append(df)
+
+        frame = pd.concat(list, axis=0, ignore_index=True)
+        data_frame_list.append({"source_name": source["name"], "data": frame})
+
+    return data_frame_list
 
 
 
+def buildDB():
+    pass
 
 
 
