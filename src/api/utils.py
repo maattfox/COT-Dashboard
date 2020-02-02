@@ -5,18 +5,39 @@ import requests
 import zipfile
 import io
 import pandas as pd
+from pymongo import MongoClient
+import logging
 
 import config
 
+
+logger = logging.getLogger('__main__.' + __name__)
+
+
+
+def setup_logger():
+    """ Prints logger info to terminal"""
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)  # Change this to DEBUG if you want a lot more info
+    ch = logging.StreamHandler()
+
+    # create formatter
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+    # add formatter to ch
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
 
 
 def createFolder(rootPath, folderName):
     try:
         os.mkdir(rootPath + "/" +folderName)
     except OSError:
-        print("Creation of the directory %s failed" % folderName)
+        logger.debug("Creation of the directory %s failed" % folderName)
     else:
-        print("Successfully created the directory %s " % folderName)
+        logger.debug("Successfully created the directory %s " % folderName)
 
 
 
@@ -40,7 +61,7 @@ def downloadAllData():
     # DOWNLOAD ALL DATA
 
     for source in config.SOURCES:
-        print(source)
+        logger.debug(source)
         createFolder(config.DATA_FOLDER, source["directory"])
         current_working_directory = config.DATA_FOLDER + source["directory"] + "/"
 
@@ -49,7 +70,7 @@ def downloadAllData():
             for i in range(url_part["from_year"], url_part["to_year"] + 1):
                 item_url_full_part = url_part["url"] + str(i) + config.SOURCE_FILE_TYPE
 
-                print("Downloading {}, year: {}, url_part: {}".format(source["name"], i, item_url_full_part))
+                logger.debug("Downloading {}, year: {}, url_part: {}".format(source["name"], i, item_url_full_part))
 
                 url = config.SOURCE_URL + item_url_full_part
 
@@ -80,7 +101,7 @@ def extractData():
                 with zipfile.ZipFile(current_folder + "/"+ filename, "r") as zip:
                     zip.extractall(output_data_folder + re.sub("[^0-9]", "", filename))
 
-                print("parsing: {}".format(os.path.join(current_folder, filename)))
+                logger.debug("parsing: {}".format(os.path.join(current_folder, filename)))
 
 
 
@@ -96,7 +117,7 @@ def parseData():
 
         for subdir, dirs, files in os.walk(output_data_folder):
             if len(files) == 1:
-                print("Parsing {} file {}".format(subdir, list[0]))
+                logger.debug("Parsing {} file {}".format(subdir, files[0]))
 
                 df = pd.read_csv(subdir + "/"+files[0], index_col=None, header=0)
                 list.append(df)
@@ -108,7 +129,47 @@ def parseData():
 
 
 
-def buildDB():
+def buildDB(importedData):
+
+    dbClient = MongoClient('mongodb', 27017)
+    db = dbClient.cotdata
+
+    # Change column names in Legacy Reports to match disagg reports, and strip market and exchange names to separate fields
+    for list in importedData:
+        if (list["source_name"] == "COT Legacy Futures") or (list["source_name"] == "COT Legacy Futures and Options"):
+
+            logger.debug("Editing {}".format(list["source_name"]))
+
+            list["data"].rename(columns={'Market and Exchange Names': 'Market_and_Exchange_Names',
+                                         'CFTC Contract Market Code': 'CFTC_Contract_Market_Code',
+                                         'CFTC Market Code in Initials': 'CFTC_Market_Code',
+                                         'CFTC Region Code': 'CFTC_Region_Code',
+                                         'CFTC Commodity Code': 'CFTC_Commodity_Code',
+                                         'As of Date in Form YYMMDD': 'As_of_Date_In_Form_YYMMDD',
+                                         'CFTC Contract Market Code (Quotes)': 'CFTC_Contract_Market_Code_Quotes',
+                                         'CFTC Market Code in Initials (Quotes)': 'CFTC_Market_Code_Quotes',
+                                         'CFTC Commodity Code (Quotes)': 'CFTC_Commodity_Code_Quotes'},
+                                inplace=True)
+
+        list["data"]['Market_Name'] = list["data"].apply(lambda row: row['Market_and_Exchange_Names'].rsplit(' - ', 1)[0], axis=1)
+        list["data"]['Exchange_Name'] = list["data"].apply(lambda row: row['Market_and_Exchange_Names'].rsplit(' - ', 1)[1], axis=1)
+
+
+        # Create Market Information Collections
+
+        name = list["source_name"]
+        if name in db.list_collection_names():
+            db.name.drop()
+
+        sourceCollection = db.name
+
+        data = list["data"].to_dict(orient='records')
+
+        sourceCollection.insert_many(data)
+
+
+
+
     pass
 
 

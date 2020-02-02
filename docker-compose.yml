@@ -1,15 +1,11 @@
 version: '3.3'
 
 services:
-   db:
-     container_name: mysql
-     image: mysql:5.7
-     volumes:
-       - "~/data:/var/lib/mysql"
-     restart: always
-     environment:
-       MYSQL_ROOT_PASSWORD: root
-
+  mongodb:
+    restart: unless-stopped
+    image: mongo
+    ports:
+      - "27017:27017"
 
   api:
     container_name: cot-api
@@ -19,5 +15,7 @@ services:
     environment:
       - ENVIRONMENT=prod
     depends_on:
-      - db
-    restart: always
+      - mongodb
+    restart: unless-stopped
+    ports:
+      - "5000:5000"

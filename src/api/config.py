@@ -6,10 +6,10 @@ DEBUG = ENVIRONMENT == "dev"
 HOST = '0.0.0.0' if ENVIRONMENT == "prod" else 'localhost'
 
 
-STARTUP = {"DOWNLOAD": False,
-           "EXTRACT": False,
+STARTUP = {"DOWNLOAD": True,
+           "EXTRACT": True,
            "PARSE": True,
-           "REBUILD_DB": False}
+           "REBUILD_DB": True}
 
 
 DATA_FOLDER = './data/'
