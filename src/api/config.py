@@ -36,12 +36,9 @@ SOURCES = [{ "name": "Disaggregated Futures",
 
             { "name": "COT Legacy Futures",
               "directory": "cot_legacy_futures",
-              "url_parts": [{"url":"deacot", "from_year": 1986, "to_year": 2020}]},
+              "url_parts": [{"url":"deacot", "from_year": 1986, "to_year": 2020}]}
 
-            { "name": "COT Legacy Futures and Options",
-              "directory": "cot_legacy_futures_options",
-              "url_parts": [{"url":"deahistfo", "from_year": 1995, "to_year": 2003},
-                            {"url":"deahistfo_", "from_year": 2004, "to_year": 2020}]}
+
            ]
 """
 SOURCES = [

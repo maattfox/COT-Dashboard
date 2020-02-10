@@ -8,8 +8,8 @@ import pandas as pd
 from pymongo import MongoClient
 import logging
 
+#import src.api.config as config
 import config
-
 
 logger = logging.getLogger('__main__.' + __name__)
 
@@ -32,8 +32,9 @@ def setup_logger():
 
 
 def createFolder(rootPath, folderName):
+
     try:
-        os.mkdir(rootPath + "/" +folderName)
+        os.mkdir(rootPath + "/" + folderName)
     except OSError:
         logger.debug("Creation of the directory %s failed" % folderName)
     else:
@@ -57,7 +58,7 @@ def downloadAllData():
     # REMOVE ALL DATA FROM DATA FOLDER!
 
     removeContentsFromPath(config.DATA_FOLDER)
-
+    createFolder('.', 'data')
     # DOWNLOAD ALL DATA
 
     for source in config.SOURCES:
@@ -131,6 +132,8 @@ def parseData():
 
 def buildDB(importedData):
 
+    # TODO: Sort out Pandas df to mongodb collection
+
     dbClient = MongoClient('mongodb', 27017)
     db = dbClient.cotdata
 
@@ -158,19 +161,17 @@ def buildDB(importedData):
         # Create Market Information Collections
 
         name = list["source_name"]
+        print(name)
+
         if name in db.list_collection_names():
-            db.name.drop()
+            db[name].drop()
 
-        sourceCollection = db.name
-
+        sourceCollection = db[name]
+        print(sourceCollection)
         data = list["data"].to_dict(orient='records')
-
+        logger.debug("Creating collection '{}'".format(name))
         sourceCollection.insert_many(data)
 
-
-
-
-    pass
 
 
 

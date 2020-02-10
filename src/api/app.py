@@ -1,17 +1,17 @@
 
 from flask import Flask
-app = Flask(__name__)
-
 import logging
+import os
+
+#import src.api.config as config
+#import src.api.utils as utils
 
 import config
 import utils
-import db
 
+app = Flask(__name__)
 
 logger = utils.setup_logger()
-
-
 
 
 
@@ -19,12 +19,6 @@ logger = utils.setup_logger()
 @app.route('/')
 def hello_world():
     return 'Running Correctly!'
-
-
-
-
-
-
 
 
 
@@ -43,5 +37,6 @@ if __name__ == '__main__':
 
         if config.STARTUP["REBUILD_DB"]:
             utils.buildDB(data)
+
     #app.run(debug=config.DEBUG, host = config.HOST)
     app.run( host=config.HOST)
